@@ -1,0 +1,184 @@
+# Root level .gitignore for liftlab_assignment
+
+# ============================================
+# Operating System Files
+# ============================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# ============================================
+# IDE and Editor Files
+# ============================================
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+.idea_modules/
+
+# Eclipse
+.classpath
+.project
+.settings/
+bin/
+.buildpath
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# NetBeans
+nbproject/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.vim/
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+
+# ============================================
+# Environment and Configuration Files
+# ============================================
+
+# Environment variables (keep example files)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+
+# Secret files
+*.pem
+*.key
+*.crt
+secrets/
+credentials/
+
+# ============================================
+# Logs and Temporary Files
+# ============================================
+
+# Log files
+*.log
+logs/
+*.log.*
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.swp
+*.swo
+*.cache
+.cache/
+
+# ============================================
+# Docker
+# ============================================
+
+# Docker volumes and data
+docker-data/
+docker-volumes/
+*.pid
+
+# Docker Compose override files (keep main docker-compose.yml)
+docker-compose.override.yml
+docker-compose.*.local.yml
+
+# ============================================
+# Documentation Build Artifacts
+# ============================================
+
+# Generated documentation
+docs/_build/
+site/
+
+# ============================================
+# Miscellaneous
+# ============================================
+
+# Archive files
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# Python (if any Python scripts exist)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ============================================
+# Project Specific
+# ============================================
+
+# Keep requirement files
+!requirement.txt
+
+# Ignore test data and fixtures
+test-data/
+fixtures/
+*.testdata
+
+# Mock data generator output
+mock_events_*.json
+*.csv
+

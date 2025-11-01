@@ -1,0 +1,176 @@
+version: '3.8'
+
+services:
+  # Zookeeper - Required for Kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    hostname: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_SYNC_LIMIT: 2
+    ports:
+      - "2181:2181"
+    networks:
+      - analytics-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+      - zookeeper-logs:/var/lib/zookeeper/log
+
+  # Kafka - Message broker for async event ingestion
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    hostname: kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9092:9092"  # External access port
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      # Listeners: PLAINTEXT for internal Docker network, PLAINTEXT_HOST for external access
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_MIN_INSYNC_REPLICAS: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    networks:
+      - analytics-network
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+
+  # Redis - In-memory data store for metrics
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    hostname: redis
+    ports:
+      - "6379:6379"
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+    networks:
+      - analytics-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - redis-data:/data
+
+  # Backend Application
+  analytics-backend:
+    build:
+      context: ./realtime_analytic_backend
+      dockerfile: Dockerfile
+    container_name: analytics-backend
+    hostname: analytics-backend
+    depends_on:
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      # Redis Configuration
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      
+      # Kafka Configuration (internal Docker network - use port 29092)
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - KAFKA_CONSUMER_GROUP_ID=analytics-consumer-group
+      - KAFKA_AUTO_OFFSET_RESET=earliest
+      - KAFKA_ENABLE_AUTO_COMMIT=true
+      - KAFKA_CONCURRENCY=2
+      
+      # Server Configuration
+      - SERVER_PORT=8080
+      
+      # CORS Configuration (comma-separated list of allowed origins)
+      - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,http://localhost:8081
+      
+      # Rate Limiting Configuration
+      - RATE_LIMIT_PER_SECOND=100
+      - RATE_LIMIT_REFRESH_PERIOD=1s
+      - RATE_LIMIT_TIMEOUT_DURATION=100ms
+      
+      # Logging Configuration
+      - LOGGING_LEVEL_ROOT=INFO
+      - LOGGING_LEVEL_COM_LIFTLAB_ANALYTICS=INFO
+      - LOGGING_LEVEL_SPRING_KAFKA=INFO
+      - LOGGING_LEVEL_SPRING_DATA_REDIS=INFO
+      
+      # JVM Options
+      - JAVA_OPTS=-Xms512m -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+    networks:
+      - analytics-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
+    restart: unless-stopped
+
+  # Frontend Application
+  analytics-frontend:
+    build:
+      context: ./realtime_analytic_frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8080/api
+    container_name: analytics-frontend
+    hostname: analytics-frontend
+    depends_on:
+      - analytics-backend
+    ports:
+      - "3000:80"
+    networks:
+      - analytics-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
+    restart: unless-stopped
+
+networks:
+  analytics-network:
+    driver: bridge
+    name: analytics-network
+
+volumes:
+  redis-data:
+    name: redis-data
+  zookeeper-data:
+    name: zookeeper-data
+  zookeeper-logs:
+    name: zookeeper-logs
+  kafka-data:
+    name: kafka-data

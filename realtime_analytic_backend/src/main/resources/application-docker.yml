@@ -1,0 +1,65 @@
+spring:
+  application:
+    name: realtime-analytics-backend
+  
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      timeout: 10s
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+  
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:29092}
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP_ID:analytics-consumer-group}
+      auto-offset-reset: ${KAFKA_AUTO_OFFSET_RESET:earliest}
+      enable-auto-commit: ${KAFKA_ENABLE_AUTO_COMMIT:true}
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.value.default.type: com.liftlab.analytics.model.AnalyticsEvent
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    listener:
+      concurrency: ${KAFKA_CONCURRENCY:2}
+
+server:
+  port: ${SERVER_PORT:8080}
+
+# CORS configuration
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000,http://localhost:8081}
+
+resilience4j:
+  ratelimiter:
+    instances:
+      eventIngestion:
+        limitForPeriod: ${RATE_LIMIT_PER_SECOND:100}
+        limitRefreshPeriod: ${RATE_LIMIT_REFRESH_PERIOD:1s}
+        timeoutDuration: ${RATE_LIMIT_TIMEOUT_DURATION:100ms}
+        subscribe-for-events: true
+        register-health-indicator: true
+
+logging:
+  level:
+    root: ${LOGGING_LEVEL_ROOT:INFO}
+    com.liftlab.analytics: ${LOGGING_LEVEL_COM_LIFTLAB_ANALYTICS:INFO}
+    org.springframework.kafka: ${LOGGING_LEVEL_SPRING_KAFKA:INFO}
+    org.springframework.data.redis: ${LOGGING_LEVEL_SPRING_DATA_REDIS:INFO}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
