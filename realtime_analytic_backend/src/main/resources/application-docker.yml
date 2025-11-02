@@ -51,8 +51,8 @@ logging:
   level:
     root: ${LOGGING_LEVEL_ROOT:INFO}
     com.liftlab.analytics: ${LOGGING_LEVEL_COM_LIFTLAB_ANALYTICS:INFO}
-    org.springframework.kafka: ${LOGGING_LEVEL_SPRING_KAFKA:INFO}
-    org.springframework.data.redis: ${LOGGING_LEVEL_SPRING_DATA_REDIS:INFO}
+    org.springframework.kafka: ${LOGGING_LEVEL_SPRING_KAFKA:ERROR}
+    org.springframework.data.redis: ${LOGGING_LEVEL_SPRING_DATA_REDIS:ERROR}
 
 management:
   endpoints:

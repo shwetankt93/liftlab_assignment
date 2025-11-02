@@ -50,9 +50,9 @@ resilience4j:
 logging:
   level:
     root: INFO
-    com.liftlab.analytics: DEBUG
-    org.springframework.kafka: INFO
-    org.springframework.data.redis: INFO
+    com.liftlab.analytics: INFO
+    org.springframework.kafka: ERROR
+    org.springframework.data.redis: ERROR
 
 management:
   endpoints:

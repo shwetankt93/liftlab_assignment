@@ -62,10 +62,10 @@ curl -X POST http://localhost:8080/api/events \
   -H "Content-Type: application/json" \
   -d '{
     "timestamp": "2024-03-15T14:30:00Z",
-    "user_id": "usr_789",
-    "event_type": "page_view",
-    "page_url": "/products/electronics",
-    "session_id": "sess_456"
+    "userId": "usr_789",
+    "eventType": "page_view",
+    "pageUrl": "/products/electronics",
+    "sessionId": "sess_456"
   }'
 
 # Check metrics
@@ -185,18 +185,28 @@ The application uses Docker Compose to orchestrate all services:
 
 ### Mock Data Generator
 
-A Python script can be used to generate mock events for testing:
+A Python script generates mock analytics events and publishes them to Kafka:
 
 ```bash
 # Install dependencies
-pip install kafka-python requests
+pip install -r requirements.txt
 
-# Run generator (100 events/second)
+# Run generator (100 events/second default)
 python mock_data_generator.py
-
-# Or with custom rate
-python mock_data_generator.py --rate 50
 ```
+
+The script will:
+- Generate events from 100 unique users (configurable)
+- Use 3 average sessions per user (configurable)
+- Publish to Kafka topic `analytics-events` at `localhost:9092`
+- Generate ~100 events per second (configurable via `EVENTS_PER_SECOND`)
+
+**Configuration:** Edit global variables in `mock_data_generator.py`:
+- `NUM_UNIQUE_USERS`: Number of unique users
+- `AVG_SESSIONS_PER_USER`: Average sessions per user
+- `EVENTS_PER_SECOND`: Event generation rate
+- `PAGE_URLS`: Array of predefined page URLs
+- `EVENT_TYPES`: Array of predefined event types
 
 
 ### Rate Limiting
@@ -292,7 +302,7 @@ docker exec -it kafka kafka-console-producer.sh \
   --topic analytics-events
 
 # Then paste JSON event
-{"timestamp":"2024-03-15T14:30:00Z","user_id":"usr_123","event_type":"page_view","page_url":"/home","session_id":"sess_456"}
+{"timestamp":"2024-03-15T14:30:00Z","userId":"usr_123","eventType":"page_view","pageUrl":"/home","sessionId":"sess_456"}
 ```
 
 ---
